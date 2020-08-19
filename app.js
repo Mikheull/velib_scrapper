@@ -1,33 +1,34 @@
-const fs = require('fs');
 const axios = require('axios');
-const mkdirp = require('mkdirp')
 const cron = require('node-cron');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv').config()
 
-let today, month, date, hour, minute, dir
+/**
+ * Mongoose connection
+ */
+const host = `mongodb+srv://${process.env.NOSQL_USER}:${process.env.NOSQL_PWD}@${process.env.NOSQL_HOST}/${process.env.NOSQL_TABLE}`
+const connect = mongoose.createConnection(host, { useNewUrlParser: true, useUnifiedTopology: true })
+const db = connect.collection(process.env.NOSQL_TABLE);
 
 
 /**
- * Création du dossier et sauvegarde des données
+ * Sauvegarde des données
  */
-cron.schedule('* * * * *', function(){
+cron.schedule('*/30 * * * *', function(){
 
-    today = new Date()
-    month = `${today.getMonth() + 1}`.padStart(2, "0")
-    date = today.getDate()
-    hour = today.getHours() + 2
-    minute = `${today.getMinutes()}`.padStart(2, "0")
+    axios.get('https://opendata.paris.fr/api/records/1.0/search/?dataset=velib-disponibilite-en-temps-reel&rows=1500')
+    .then(function (response) {
 
-    dir = `./data/${today.getFullYear()}`
-    mkdirp(dir)
+        db.insertMany(response.data.records, function(err,result) {
+            if (err) {
+            console.log(err);
+            }else{
+                console.log(result);
+            }
+        });
 
-    axios({
-        method: "get",
-        url: "https://opendata.paris.fr/api/records/1.0/search/?dataset=velib-disponibilite-en-temps-reel&rows=1500",
-        responseType: "stream"
-    }).then(function (response) {
-        // console.log(`Saved successfully at ${dir}/${date}_${month}__${hour}_${minute}.json`)
-        response.data.pipe(fs.createWriteStream(`${dir}/${date}_${month}__${hour}_${minute}.json`));
     }).catch(err => {
-        // console.log(err);
+        console.log(err);
     });
+
 });
