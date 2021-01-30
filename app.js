@@ -16,12 +16,12 @@ const db = connect.collection(process.env.NOSQL_TABLE);
  */
 cron.schedule('*/30 * * * *', function(){
 
-    axios.get('https://opendata.paris.fr/api/records/1.0/search/?dataset=velib-disponibilite-en-temps-reel&rows=1500')
+    axios.get('https://opendata.paris.fr/api/records/1.0/search/?dataset=velib-disponibilite-en-temps-reel&rows=1500&fields=stationcode,ebike,mechanical,numdocksavailable')
     .then(function (response) {
 
         db.insertMany(response.data.records, function(err,result) {
             if (err) {
-            console.log(err);
+                console.log(err);
             }else{
                 console.log(result);
             }
